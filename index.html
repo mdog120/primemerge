@@ -6,46 +6,38 @@
 <title>Prime Merge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#faf8ff;
     --panel:#ffffff;
     --accent:#7b68ee;
-    --grid:#ede9fe;
-    --text:#4b5563;
+    --grid:#efeaff;
+    --text:#374151;
     --muted:#6b7280;
+    --gap:10px;
+    --board-max:460px; /* keeps board on screen without scrolling */
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; padding:0; display:flex; align-items:center; justify-content:center;
+    margin:0; padding:16px; display:flex; align-items:center; justify-content:center;
     background: radial-gradient(1200px 800px at 20% -10%, #fff 0%, #f7f4ff 50%, #efeaff 100%), var(--bg);
     color:var(--text);
     font-family:'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   }
-  .wrap{width:min(92vw, 680px);}
-  header{
-    display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;
-  }
-  .title{
-    display:flex; gap:12px; align-items:center;
-  }
-  .logo{
-    width:56px; height:56px; border-radius:14px; background: linear-gradient(145deg,#a78bfa,#7c3aed);
-    display:grid; place-items:center; color:white; font-weight:900; font-size:22px; box-shadow:0 8px 20px rgba(124,58,237,.35);
-  }
-  h1{margin:0; font-family:'Nunito', sans-serif; font-weight:900; letter-spacing:.3px; font-size:28px;}
+  .wrap{width:min(96vw, 720px);}  
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px}
+  .title{display:flex; gap:12px; align-items:center}
+  .logo{width:56px; height:56px; border-radius:14px; background: linear-gradient(145deg,#a78bfa,#7c3aed); display:grid; place-items:center; color:white; font-weight:900; font-size:22px; box-shadow:0 8px 20px rgba(124,58,237,.35)}
+  h1{margin:0; font-family:'Nunito', sans-serif; font-weight:900; letter-spacing:.3px; font-size:28px}
   .sub{margin:2px 0 0; font-size:12px; color:var(--muted)}
   .stats{display:flex; gap:8px; align-items:stretch}
-  .pill{background:var(--panel); border-radius:14px; padding:8px 12px; min-width:90px; text-align:center; box-shadow: 0 6px 16px rgba(31,41,55,.08);}
-  .pill b{display:block; font-family:'Nunito', sans-serif; font-size:16px}
+  .pill{background:var(--panel); border-radius:14px; padding:8px 12px; min-width:96px; text-align:center; box-shadow: 0 6px 16px rgba(31,41,55,.08)}
+  .pill b{display:block; font-family:'Nunito', sans-serif; font-size:18px}
   .pill span{font-size:11px; color:var(--muted)}
   .controls{display:flex; gap:8px; margin-top:8px}
-  button{
-    appearance:none; border:0; background:var(--accent); color:#fff; padding:10px 14px; border-radius:12px; font-weight:800;
-    box-shadow: 0 6px 16px rgba(123,104,238,.35); cursor:pointer; transition:transform .05s ease;
-  }
+  button{appearance:none; border:0; background:var(--accent); color:#fff; padding:10px 14px; border-radius:12px; font-weight:800; box-shadow: 0 6px 16px rgba(123,104,238,.35); cursor:pointer; transition:transform .05s ease}
   button.secondary{background:#e5e7eb; color:#374151; box-shadow:none}
   button:active{transform:translateY(1px)}
 
@@ -53,35 +45,34 @@
   .meta{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
   .meta .left{display:flex; gap:12px; align-items:center}
   .level{font-weight:800}
-  .goal{font-weight:700; color:#6d28d9}
+  .goal{font-weight:800; color:#6d28d9}
 
-  .grid{
-    background:var(--grid); border-radius:16px; padding:10px; display:grid; grid-template-columns:repeat(4,1fr); grid-gap:10px;
-  }
-  .cell{width:100%; padding-top:100%; position:relative; border-radius:14px; background:#e9e6ff40;}
-  .tile{
-    position:absolute; inset:0; margin:0; border-radius:14px; display:grid; place-items:center; font-weight:900; color:#2c2c35; font-family:'Nunito', sans-serif;
-    font-size:24px; box-shadow: inset 0 0 1px rgba(0,0,0,.04), 0 10px 16px rgba(31,41,55,.10);
-    transform:scale(1); transition: transform .12s ease, background .15s ease, box-shadow .15s ease;
-  }
-  .tile.pop{ animation: pop .18s ease; }
-  @keyframes pop{ 0%{transform:scale(.6); opacity:.7} 100%{transform:scale(1); opacity:1} }
-  .tile.new{ animation: appear .18s ease; }
-  @keyframes appear{ from{transform:scale(.7); opacity:.0} to{transform:scale(1); opacity:1} }
+  /* Board is a fixed square that scales down responsively */
+  .board{position:relative; width:min(92vw, var(--board-max)); aspect-ratio:1/1;}
+  .grid{position:absolute; inset:0; background:var(--grid); border-radius:16px; padding:var(--gap); display:grid; grid-template-columns:repeat(4,1fr); grid-gap:var(--gap)}
+  .cell{width:100%; height:100%; border-radius:14px; background:#e9e6ff40}
+  /* a separate absolute layer for animated tiles */
+  .tiles{position:absolute; inset:var(--gap); display:block}
+
+  .tile{position:absolute; width:calc((100% - (var(--gap)*3))/4); height:calc((100% - (var(--gap)*3))/4); border-radius:14px; display:grid; place-items:center; font-weight:900; color:#2c2c35; font-family:'Nunito', sans-serif; font-size:24px; box-shadow: inset 0 0 1px rgba(0,0,0,.04), 0 10px 16px rgba(31,41,55,.10); transform:translate(var(--x), var(--y)) scale(1); transition: transform .14s ease, background .15s ease}
+  .tile.pop{animation:pop .18s ease}
+  @keyframes pop{0%{transform:translate(var(--x), var(--y)) scale(.6); opacity:.8}100%{transform:translate(var(--x), var(--y)) scale(1); opacity:1}}
 
   .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:22px; background:#111827; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,.3); font-weight:700; display:none}
   .toast.show{display:inline-block}
 
   .help{margin-top:10px; font-size:12px; color:var(--muted); text-align:center}
-  .help b{color:#6d28d9}
-
-  /* cute emoji corner */
   .emoji-corner{position:fixed; right:16px; top:16px; opacity:.5; font-size:22px}
 
-  @media (max-width:480px){
-    .pill{min-width:76px}
-    .tile{font-size:20px}
-  }
+  /* Modal */
+  .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(17,24,39,.45); z-index:50}
+  .modal.show{display:flex}
+  .card{background:#fff; border-radius:16px; width:min(92vw, 520px); padding:16px 16px 14px; box-shadow:0 20px 50px rgba(0,0,0,.25); position:relative}
+  .card h2{margin:0 0 8px; font-family:'Nunito'; font-weight:900}
+  .card p{margin:6px 0; color:#4b5563}
+  .close-x{position:absolute; right:10px; top:10px; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:#eef2ff; cursor:pointer; font-weight:900}
+
+  @media (max-width:480px){ .pill{min-width:82px} .tile{font-size:20px} }
 </style>
 </head>
 <body>
@@ -92,9 +83,9 @@
       <div class="logo">PM</div>
       <div>
         <h1>Prime Merge</h1>
-        <div class="sub">2048-style, but with primes — cute & cozy ✨</div>
+        <div class="sub">2048-style, but with pastel primes — cute & cozy ✨</div>
         <div class="controls">
-          <button id="newBtn">New Game</button>
+          <button id="newBtn">Play Again</button>
           <button id="undoBtn" class="secondary">Undo</button>
         </div>
       </div>
@@ -114,17 +105,34 @@
       <div class="right" id="status" style="font-weight:700; color:#10b981"></div>
     </div>
 
-    <div id="grid" class="grid" aria-label="game board" role="grid"></div>
+    <div class="board" id="board">
+      <div id="grid" class="grid" aria-label="game board" role="grid"></div>
+      <div id="tiles" class="tiles" aria-hidden="true"></div>
+    </div>
   </div>
 
   <div class="help">Use <b>arrow keys / swipe</b>. Merge same primes → next prime. Reach the <b>goal prime</b> to level up!</div>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<!-- Modal Instructions -->
+<div id="modal" class="modal" role="dialog" aria-modal="true">
+  <div class="card">
+    <div class="close-x" id="closeModal" aria-label="Close">✕</div>
+    <h2>How to play</h2>
+    <p>Swipe or use arrow keys to slide all tiles. When two identical primes collide, they merge into the <b>next prime</b> (2→3, 3→5, 5→7...).</p>
+    <p>Reach the goal prime to level up: <b>997</b> → <b>7919</b> → <b>104729</b>.</p>
+    <p>Tip: chain multiple merges in one move to score more points!</p>
+    <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end">
+      <button id="gotIt">Got it!</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   // ---------- Prime utilities ----------
-  const MAX_SIEVE = 200000; // generous enough for our targets
+  const MAX_SIEVE = 200000;
   const sieve = new Uint8Array(MAX_SIEVE+1);
   const primes = [];
   function buildPrimes(){
@@ -134,18 +142,13 @@
   }
   buildPrimes();
   const primeIndex = new Map(primes.map((p,i)=>[p,i]));
-  function isPrime(n){ return n<=MAX_SIEVE ? !!sieve[n] : false }
-  function nextPrime(p){
-    const idx = primeIndex.get(p);
-    if(idx==null) return p; // should not happen
-    return primes[idx+1] ?? p;
-  }
+  const nextPrime = p => primes[(primeIndex.get(p)||0)+1]||p;
 
   // ---------- Game constants ----------
   const SIZE = 4;
   const LEVEL_GOALS = [997, 7919, 104729];
-  const SPAWN = [ {v:2,w:0.7}, {v:3,w:0.2}, {v:5,w:0.1} ];
-  const STORAGE_KEY = 'prime-merge-v1';
+  const SPAWN = [ {v:2,w:0.72}, {v:3,w:0.2}, {v:5,w:0.08} ];
+  const STORAGE_KEY = 'prime-merge-v2';
 
   // ---------- State ----------
   let grid = createEmpty();
@@ -156,17 +159,23 @@
 
   // ---------- DOM ----------
   const elGrid = document.getElementById('grid');
+  const elTiles = document.getElementById('tiles');
   const elScore = document.getElementById('score');
   const elBest = document.getElementById('best');
   const elLevel = document.getElementById('level');
   const elGoal = document.getElementById('goal');
   const elStatus = document.getElementById('status');
   const elToast = document.getElementById('toast');
+  const elModal = document.getElementById('modal');
+  const elClose = document.getElementById('closeModal');
+  const elGotIt = document.getElementById('gotIt');
 
   document.getElementById('newBtn').addEventListener('click', ()=> newGame(true));
   document.getElementById('undoBtn').addEventListener('click', undoMove);
+  elClose.addEventListener('click', hideModal);
+  elGotIt.addEventListener('click', hideModal);
 
-  // Build grid cells once
+  // Build static background cells
   function renderBase(){
     elGrid.innerHTML='';
     for(let i=0;i<SIZE*SIZE;i++){
@@ -180,76 +189,69 @@
 
   // ---------- Helpers ----------
   function createEmpty(){ return Array.from({length:SIZE},()=>Array(SIZE).fill(0)); }
-  function randomChoiceWeighted(arr){
-    const r = Math.random();
-    let acc=0; for(const {v,w} of arr){ acc+=w; if(r<=acc) return v; }
-    return arr[arr.length-1].v;
-  }
+  function randomChoiceWeighted(arr){ const r=Math.random(); let acc=0; for(const {v,w} of arr){ acc+=w; if(r<=acc) return v;} return arr[arr.length-1].v; }
   function cloneGrid(g){ return g.map(r=>r.slice()); }
-  function saveHistory(){ history.push({grid:cloneGrid(grid), score}); if(history.length>40) history.shift(); }
-  function undoMove(){ if(!history.length) return; const s=history.pop(); grid=s.grid; score=s.score; draw(); showToast('Undo'); }
+  function saveHistory(){ history.push({grid:cloneGrid(grid), score}); if(history.length>60) history.shift(); }
+  function undoMove(){ if(!history.length) return; const s=history.pop(); grid=s.grid; score=s.score; drawInstant(); showToast('Undo'); }
   function persist(){ localStorage.setItem('pm_best', best); localStorage.setItem('pm_level', level); }
 
   function colorForPrime(p){
-    // Pastel arc through hues using prime index
-    const idx = primeIndex.get(p) ?? 0; // 2->0, 3->1, ...
-    const hue = (idx*22)%360; // step hue
-    const sat = 72; const light = 86 - Math.min(idx*2, 32); // slightly deeper for bigger primes
+    const idx = primeIndex.get(p) ?? 0;
+    const hue = (idx*22)%360; // shift
+    const sat = 62; const light = 88 - Math.min(idx*1.5, 26); // soft pastels
     return `hsl(${hue} ${sat}% ${light}%)`;
   }
 
-  function draw(newPos=null){
-    // wipe tiles
-    document.querySelectorAll('.tile').forEach(t=>t.remove());
-    // populate tiles
-    const cells = elGrid.children;
+  // get tile pixel position for row/col (0-based) inside .tiles
+  function pos(r,c){
+    const tilesRect = elTiles.getBoundingClientRect();
+    const gridRect = elGrid.getBoundingClientRect();
+    const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap'));
+    const cellW = (tilesRect.width - gap*3)/4;
+    const x = c*(cellW+gap);
+    const y = r*(cellW+gap);
+    return {x,y};
+  }
+
+  function drawInstant(){
+    // clear visual tiles
+    elTiles.innerHTML='';
     for(let r=0;r<SIZE;r++){
       for(let c=0;c<SIZE;c++){
-        const val = grid[r][c];
-        if(val){
-          const tile = document.createElement('div');
-          tile.className='tile';
-          tile.textContent = val;
-          tile.style.background = colorForPrime(val);
-          const idx = r*SIZE + c;
-          cells[idx].appendChild(tile);
-        }
+        const v=grid[r][c]; if(!v) continue;
+        const t=document.createElement('div');
+        t.className='tile';
+        t.textContent=v;
+        t.style.background=colorForPrime(v);
+        const p=pos(r,c);
+        t.style.setProperty('--x', p.x+'px');
+        t.style.setProperty('--y', p.y+'px');
+        elTiles.appendChild(t);
       }
     }
-    // score + best + level
-    elScore.textContent = score;
-    elBest.textContent = best;
-    elLevel.textContent = level;
-    elGoal.textContent = goal;
+    elScore.textContent = score; elBest.textContent = best; elLevel.textContent = level; elGoal.textContent = goal;
   }
 
   function spawnNew(initial=false){
-    const empties = [];
-    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!grid[r][c]) empties.push([r,c]);
+    const empties=[]; for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!grid[r][c]) empties.push([r,c]);
     if(!empties.length) return false;
     const [r,c] = empties[Math.floor(Math.random()*empties.length)];
     const v = initial ? (Math.random()<0.5?2:3) : randomChoiceWeighted(SPAWN);
-    grid[r][c] = v;
-    // mark as new for animation
-    const idx = r*SIZE + c;
-    const cell = elGrid.children[idx];
-    const tile = document.createElement('div'); tile.className='tile new'; tile.textContent=v; tile.style.background=colorForPrime(v);
-    cell.appendChild(tile);
-    setTimeout(()=>tile.classList.remove('new'), 200);
+    grid[r][c]=v;
+    const t=document.createElement('div'); t.className='tile pop'; t.textContent=v; t.style.background=colorForPrime(v);
+    const p=pos(r,c); t.style.setProperty('--x', p.x+'px'); t.style.setProperty('--y', p.y+'px'); elTiles.appendChild(t);
+    setTimeout(()=>t.classList.remove('pop'), 200);
     return true;
   }
 
   function newGame(resetLevel=false){
-    grid = createEmpty(); score = 0; history = [];
-    if(resetLevel){ level = 1; goal = LEVEL_GOALS[0]; elStatus.textContent=''; }
-    spawnNew(true); spawnNew(true);
-    draw();
+    grid=createEmpty(); score=0; history=[]; elStatus.textContent='';
+    if(resetLevel){ level=1; goal=LEVEL_GOALS[0]; }
+    spawnNew(true); spawnNew(true); drawInstant();
   }
 
   function anyMovesLeft(){
-    // empty cell exists
     for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!grid[r][c]) return true;
-    // equal neighbors
     for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
       const v=grid[r][c];
       if(r+1<SIZE && grid[r+1][c]===v) return true;
@@ -258,131 +260,148 @@
     return false;
   }
 
-  function reachedGoal(){
-    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(grid[r][c]===goal) return true;
-    return false;
-  }
+  function reachedGoal(){ for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(grid[r][c]===goal) return true; return false; }
 
   function levelUp(){
     const at = LEVEL_GOALS.indexOf(goal);
     if(at>=0 && at < LEVEL_GOALS.length-1){
-      level = at+2; goal = LEVEL_GOALS[at+1];
-      best = Math.max(best, score); persist();
-      elStatus.textContent = 'Level up!';
+      level = at+2; goal = LEVEL_GOALS[at+1]; best=Math.max(best,score); persist();
       showToast(`Level ${level-1} cleared! ✨ New goal: ${goal}`);
-      // start fresh board for next level
-      grid = createEmpty(); score = 0; history = [];
-      spawnNew(true); spawnNew(true); draw();
-    }else{
-      // completed all goals
-      best = Math.max(best, score); persist();
-      elStatus.textContent = 'You beat all levels! 🏆';
-      showToast('All levels complete! Endless mode unlocked');
-      // switch to endless: keep current goal = last, but allow continuing
+      grid=createEmpty(); score=0; history=[]; spawnNew(true); spawnNew(true); drawInstant();
+    } else {
+      best=Math.max(best,score); persist(); showToast('All levels complete! Endless unlocked');
     }
   }
 
-  function move(dir){
-    // dir: 'left','right','up','down'
-    saveHistory();
-    let moved = false; let gained = 0;
-
-    const range = n => Array.from({length:n}, (_,i)=>i);
-
-    const travel = (line)=>{
-      // compact non-zeros
-      const vals = line.filter(v=>v!==0);
-      // merge equal neighbors into next prime
-      const out = [];
-      for(let i=0;i<vals.length;){
-        if(i+1<vals.length && vals[i]===vals[i+1]){
-          const merged = nextPrime(vals[i]);
-          out.push(merged); gained += merged; i+=2;
-        }else{ out.push(vals[i]); i+=1; }
+  function travelLine(line){
+    // returns {result: [..4], moves: [{from,to,merge,value,newValue?}]}
+    const vals=line.filter(v=>v!==0);
+    const out=[]; const moves=[]; let i=0; let write=0;
+    while(i<vals.length){
+      if(i+1<vals.length && vals[i]===vals[i+1]){
+        const merged = nextPrime(vals[i]);
+        out[write]=merged;
+        moves.push({from:i, to:write, merge:true, value:vals[i], newValue:merged});
+        i+=2; write++;
+      } else {
+        out[write]=vals[i];
+        moves.push({from:i, to:write, merge:false, value:vals[i]});
+        i++; write++;
       }
-      // pad with zeros
-      while(out.length<SIZE) out.push(0);
-      return out;
-    };
+    }
+    while(out.length<SIZE) out.push(0);
+    return {result:out, moves};
+  }
+
+  function move(dir){
+    saveHistory();
+    let moved=false; let gained=0; const animations=[];
+    const range = n=>Array.from({length:n},(_,i)=>i);
 
     if(dir==='left' || dir==='right'){
       for(const r of range(SIZE)){
         const row = grid[r].slice();
         const rev = dir==='right';
-        const line = rev ? row.slice().reverse() : row;
-        const next = travel(line);
-        const final = rev ? next.slice().reverse() : next;
+        const dense = (rev?row.slice().reverse():row).filter(v=>v!==0);
+        if(dense.length===0) continue;
+        const {result,moves} = travelLine(rev?row.slice().reverse():row);
+        const final = rev?result.slice().reverse():result;
+        // build animations for each non-zero in original row order
+        const indices = [];
+        for(let c=0;c<SIZE;c++) if(row[c]) indices.push(c);
+        moves.forEach((m,idx)=>{
+          const fromC = indices[m.from];
+          const toC = rev ? (SIZE-1 - m.to) : m.to;
+          animations.push({from:{r,c:fromC}, to:{r,c:toC}, merge:m.merge, value:m.value, newValue:m.newValue});
+          if(m.merge) gained += m.newValue; // score adds merged tile value
+        });
         for(let c=0;c<SIZE;c++) if(grid[r][c]!==final[c]){ grid[r][c]=final[c]; moved=true; }
       }
-    }else{
+    } else {
       for(const c of range(SIZE)){
         const col = range(SIZE).map(r=>grid[r][c]);
         const rev = dir==='down';
-        const line = rev ? col.slice().reverse() : col;
-        const next = travel(line);
-        const final = rev ? next.slice().reverse() : next;
+        const {result,moves} = travelLine(rev?col.slice().reverse():col);
+        const final = rev?result.slice().reverse():result;
+        const indices=[]; for(let r=0;r<SIZE;r++) if(col[r]) indices.push(r);
+        moves.forEach((m)=>{
+          const fromR = indices[m.from];
+          const toR = rev ? (SIZE-1 - m.to) : m.to;
+          animations.push({from:{r:fromR,c}, to:{r:toR,c}, merge:m.merge, value:m.value, newValue:m.newValue});
+          if(m.merge) gained += m.newValue;
+        });
         for(let r=0;r<SIZE;r++) if(grid[r][c]!==final[r]){ grid[r][c]=final[r]; moved=true; }
       }
     }
 
-    if(moved){
+    if(!moved){ history.pop(); return; }
+
+    // animate clones
+    const clones=[];
+    animations.forEach(step=>{
+      const t=document.createElement('div'); t.className='tile'; t.textContent=step.value; t.style.background=colorForPrime(step.value);
+      const p0=pos(step.from.r, step.from.c); const p1=pos(step.to.r, step.to.c);
+      t.style.setProperty('--x', p0.x+'px'); t.style.setProperty('--y', p0.y+'px');
+      elTiles.appendChild(t); clones.push({el:t, to:p1, step});
+      // force reflow
+      void t.offsetWidth;
+      t.style.transition='transform .14s ease';
+      t.style.setProperty('--x', p1.x+'px'); t.style.setProperty('--y', p1.y+'px');
+    });
+
+    // after animation ends, refresh true state
+    const onDone = ()=>{
+      clones.forEach(({el})=>el.remove());
       score += gained; if(score>best){ best=score; persist(); }
-      draw();
+      drawInstant();
       spawnNew();
-      draw();
+      drawInstant();
       if(reachedGoal()) levelUp();
-      else if(!anyMovesLeft()) { showToast('No moves left 😭'); elStatus.textContent='Game over'; }
-    }else{
-      // undo pop because nothing changed
-      history.pop();
-    }
+      else if(!anyMovesLeft()){ showToast('No moves left 😭'); elStatus.textContent='Game over'; }
+    };
+
+    let left = clones.length; if(left===0){ onDone(); return; }
+    clones.forEach(({el,step})=>{
+      el.addEventListener('transitionend', ()=>{ if(--left===0) onDone(); }, {once:true});
+    });
   }
 
   // ---------- Input ----------
   window.addEventListener('keydown', (e)=>{
-    const key = e.key;
-    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','w','s','A','D','W','S'].includes(key)) e.preventDefault();
-    if(key==='ArrowLeft' || key==='a' || key==='A') move('left');
-    if(key==='ArrowRight'|| key==='d' || key==='D') move('right');
-    if(key==='ArrowUp'   || key==='w' || key==='W') move('up');
-    if(key==='ArrowDown' || key==='s' || key==='S') move('down');
+    const key=e.key; if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','w','s','A','D','W','S'].includes(key)) e.preventDefault();
+    if(key==='ArrowLeft'||key==='a'||key==='A') move('left');
+    if(key==='ArrowRight'||key==='d'||key==='D') move('right');
+    if(key==='ArrowUp'||key==='w'||key==='W') move('up');
+    if(key==='ArrowDown'||key==='s'||key==='S') move('down');
   });
 
   // touch/swipe
-  let touchStart=null;
-  elGrid.addEventListener('touchstart', e=>{ if(e.touches.length===1){ touchStart={x:e.touches[0].clientX, y:e.touches[0].clientY}; } }, {passive:true});
-  elGrid.addEventListener('touchend', e=>{
-    if(!touchStart) return; const dx = (e.changedTouches[0].clientX - touchStart.x); const dy = (e.changedTouches[0].clientY - touchStart.y);
-    const ax=Math.abs(dx), ay=Math.abs(dy);
-    if(Math.max(ax,ay) < 24){ touchStart=null; return; }
-    if(ax>ay) move(dx>0?'right':'left'); else move(dy>0?'down':'up');
-    touchStart=null;
-  });
+  let touchStart=null; const board=document.getElementById('board');
+  board.addEventListener('touchstart', e=>{ if(e.touches.length===1){ touchStart={x:e.touches[0].clientX, y:e.touches[0].clientY}; } }, {passive:true});
+  board.addEventListener('touchend', e=>{ if(!touchStart) return; const dx=e.changedTouches[0].clientX-touchStart.x; const dy=e.changedTouches[0].clientY-touchStart.y; const ax=Math.abs(dx), ay=Math.abs(dy); if(Math.max(ax,ay)<24){ touchStart=null; return;} if(ax>ay) move(dx>0?'right':'left'); else move(dy>0?'down':'up'); touchStart=null; });
 
-  function showToast(msg){ elToast.textContent = msg; elToast.classList.add('show'); setTimeout(()=>elToast.classList.remove('show'), 1100); }
+  function showToast(msg){ elToast.textContent=msg; elToast.classList.add('show'); setTimeout(()=>elToast.classList.remove('show'), 1100); }
+
+  // ---------- Modal logic ----------
+  function hideModal(){ elModal.classList.remove('show'); localStorage.setItem('pm_seen','1'); }
+  function maybeShowModal(){ if(!localStorage.getItem('pm_seen')) elModal.classList.add('show'); }
 
   // ---------- Init ----------
   function restore(){
     try{
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
       if(saved && Array.isArray(saved.grid)){
-        grid = saved.grid; score = saved.score||0; best = Number(localStorage.getItem('pm_best')||best); level = saved.level||level;
-        goal = LEVEL_GOALS[Math.min(level-1, LEVEL_GOALS.length-1)]||LEVEL_GOALS[LEVEL_GOALS.length-1];
-        draw(); return true;
+        grid = saved.grid; score = saved.score||0; best = Number(localStorage.getItem('pm_best')||best); level = saved.level||level; goal = LEVEL_GOALS[Math.min(level-1, LEVEL_GOALS.length-1)]||LEVEL_GOALS.at(-1);
+        drawInstant(); return true;
       }
-    }catch(_){/* ignore */}
+    }catch(_){ }
     return false;
   }
+  function save(){ const payload={grid,score,level}; localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); }
+  window.addEventListener('beforeunload', save); setInterval(save, 2500);
 
-  function save(){
-    const payload = {grid, score, level};
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }
-
-  window.addEventListener('beforeunload', save);
-  setInterval(save, 2500);
-
-  if(!restore()) newGame(false); else draw();
+  if(!restore()) { newGame(false); } else { drawInstant(); }
+  maybeShowModal();
 })();
 </script>
 </body>
