@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prime Merge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf8ff;
+    --panel:#ffffff;
+    --accent:#7b68ee;
+    --grid:#ede9fe;
+    --text:#4b5563;
+    --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; padding:0; display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(1200px 800px at 20% -10%, #fff 0%, #f7f4ff 50%, #efeaff 100%), var(--bg);
+    color:var(--text);
+    font-family:'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  }
+  .wrap{width:min(92vw, 680px);}
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;
+  }
+  .title{
+    display:flex; gap:12px; align-items:center;
+  }
+  .logo{
+    width:56px; height:56px; border-radius:14px; background: linear-gradient(145deg,#a78bfa,#7c3aed);
+    display:grid; place-items:center; color:white; font-weight:900; font-size:22px; box-shadow:0 8px 20px rgba(124,58,237,.35);
+  }
+  h1{margin:0; font-family:'Nunito', sans-serif; font-weight:900; letter-spacing:.3px; font-size:28px;}
+  .sub{margin:2px 0 0; font-size:12px; color:var(--muted)}
+  .stats{display:flex; gap:8px; align-items:stretch}
+  .pill{background:var(--panel); border-radius:14px; padding:8px 12px; min-width:90px; text-align:center; box-shadow: 0 6px 16px rgba(31,41,55,.08);}
+  .pill b{display:block; font-family:'Nunito', sans-serif; font-size:16px}
+  .pill span{font-size:11px; color:var(--muted)}
+  .controls{display:flex; gap:8px; margin-top:8px}
+  button{
+    appearance:none; border:0; background:var(--accent); color:#fff; padding:10px 14px; border-radius:12px; font-weight:800;
+    box-shadow: 0 6px 16px rgba(123,104,238,.35); cursor:pointer; transition:transform .05s ease;
+  }
+  button.secondary{background:#e5e7eb; color:#374151; box-shadow:none}
+  button:active{transform:translateY(1px)}
+
+  .board-wrap{background:var(--panel); padding:16px; border-radius:20px; box-shadow:0 10px 28px rgba(31,41,55,.12)}
+  .meta{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .meta .left{display:flex; gap:12px; align-items:center}
+  .level{font-weight:800}
+  .goal{font-weight:700; color:#6d28d9}
+
+  .grid{
+    background:var(--grid); border-radius:16px; padding:10px; display:grid; grid-template-columns:repeat(4,1fr); grid-gap:10px;
+  }
+  .cell{width:100%; padding-top:100%; position:relative; border-radius:14px; background:#e9e6ff40;}
+  .tile{
+    position:absolute; inset:0; margin:0; border-radius:14px; display:grid; place-items:center; font-weight:900; color:#2c2c35; font-family:'Nunito', sans-serif;
+    font-size:24px; box-shadow: inset 0 0 1px rgba(0,0,0,.04), 0 10px 16px rgba(31,41,55,.10);
+    transform:scale(1); transition: transform .12s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .tile.pop{ animation: pop .18s ease; }
+  @keyframes pop{ 0%{transform:scale(.6); opacity:.7} 100%{transform:scale(1); opacity:1} }
+  .tile.new{ animation: appear .18s ease; }
+  @keyframes appear{ from{transform:scale(.7); opacity:.0} to{transform:scale(1); opacity:1} }
+
+  .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:22px; background:#111827; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,.3); font-weight:700; display:none}
+  .toast.show{display:inline-block}
+
+  .help{margin-top:10px; font-size:12px; color:var(--muted); text-align:center}
+  .help b{color:#6d28d9}
+
+  /* cute emoji corner */
+  .emoji-corner{position:fixed; right:16px; top:16px; opacity:.5; font-size:22px}
+
+  @media (max-width:480px){
+    .pill{min-width:76px}
+    .tile{font-size:20px}
+  }
+</style>
+</head>
+<body>
+<div class="emoji-corner">✨🔢💜</div>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <div class="logo">PM</div>
+      <div>
+        <h1>Prime Merge</h1>
+        <div class="sub">2048-style, but with primes — cute & cozy ✨</div>
+        <div class="controls">
+          <button id="newBtn">New Game</button>
+          <button id="undoBtn" class="secondary">Undo</button>
+        </div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="pill"><b id="score">0</b><span>Score</span></div>
+      <div class="pill"><b id="best">0</b><span>Best</span></div>
+    </div>
+  </header>
+
+  <div class="board-wrap">
+    <div class="meta">
+      <div class="left">
+        <div>Level <span class="level" id="level">1</span></div>
+        <div>Goal <span class="goal" id="goal">997</span></div>
+      </div>
+      <div class="right" id="status" style="font-weight:700; color:#10b981"></div>
+    </div>
+
+    <div id="grid" class="grid" aria-label="game board" role="grid"></div>
+  </div>
+
+  <div class="help">Use <b>arrow keys / swipe</b>. Merge same primes → next prime. Reach the <b>goal prime</b> to level up!</div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  // ---------- Prime utilities ----------
+  const MAX_SIEVE = 200000; // generous enough for our targets
+  const sieve = new Uint8Array(MAX_SIEVE+1);
+  const primes = [];
+  function buildPrimes(){
+    sieve.fill(1); sieve[0]=0; sieve[1]=0;
+    for(let i=2;i*i<=MAX_SIEVE;i++) if(sieve[i]) for(let j=i*i;j<=MAX_SIEVE;j+=i) sieve[j]=0;
+    for(let i=2;i<=MAX_SIEVE;i++) if(sieve[i]) primes.push(i);
+  }
+  buildPrimes();
+  const primeIndex = new Map(primes.map((p,i)=>[p,i]));
+  function isPrime(n){ return n<=MAX_SIEVE ? !!sieve[n] : false }
+  function nextPrime(p){
+    const idx = primeIndex.get(p);
+    if(idx==null) return p; // should not happen
+    return primes[idx+1] ?? p;
+  }
+
+  // ---------- Game constants ----------
+  const SIZE = 4;
+  const LEVEL_GOALS = [997, 7919, 104729];
+  const SPAWN = [ {v:2,w:0.7}, {v:3,w:0.2}, {v:5,w:0.1} ];
+  const STORAGE_KEY = 'prime-merge-v1';
+
+  // ---------- State ----------
+  let grid = createEmpty();
+  let score = 0; let best = Number(localStorage.getItem('pm_best')||0);
+  let level = Number(localStorage.getItem('pm_level')||1);
+  let goal = LEVEL_GOALS[Math.min(level-1, LEVEL_GOALS.length-1)];
+  let history = [];
+
+  // ---------- DOM ----------
+  const elGrid = document.getElementById('grid');
+  const elScore = document.getElementById('score');
+  const elBest = document.getElementById('best');
+  const elLevel = document.getElementById('level');
+  const elGoal = document.getElementById('goal');
+  const elStatus = document.getElementById('status');
+  const elToast = document.getElementById('toast');
+
+  document.getElementById('newBtn').addEventListener('click', ()=> newGame(true));
+  document.getElementById('undoBtn').addEventListener('click', undoMove);
+
+  // Build grid cells once
+  function renderBase(){
+    elGrid.innerHTML='';
+    for(let i=0;i<SIZE*SIZE;i++){
+      const cell=document.createElement('div');
+      cell.className='cell';
+      cell.setAttribute('role','gridcell');
+      elGrid.appendChild(cell);
+    }
+  }
+  renderBase();
+
+  // ---------- Helpers ----------
+  function createEmpty(){ return Array.from({length:SIZE},()=>Array(SIZE).fill(0)); }
+  function randomChoiceWeighted(arr){
+    const r = Math.random();
+    let acc=0; for(const {v,w} of arr){ acc+=w; if(r<=acc) return v; }
+    return arr[arr.length-1].v;
+  }
+  function cloneGrid(g){ return g.map(r=>r.slice()); }
+  function saveHistory(){ history.push({grid:cloneGrid(grid), score}); if(history.length>40) history.shift(); }
+  function undoMove(){ if(!history.length) return; const s=history.pop(); grid=s.grid; score=s.score; draw(); showToast('Undo'); }
+  function persist(){ localStorage.setItem('pm_best', best); localStorage.setItem('pm_level', level); }
+
+  function colorForPrime(p){
+    // Pastel arc through hues using prime index
+    const idx = primeIndex.get(p) ?? 0; // 2->0, 3->1, ...
+    const hue = (idx*22)%360; // step hue
+    const sat = 72; const light = 86 - Math.min(idx*2, 32); // slightly deeper for bigger primes
+    return `hsl(${hue} ${sat}% ${light}%)`;
+  }
+
+  function draw(newPos=null){
+    // wipe tiles
+    document.querySelectorAll('.tile').forEach(t=>t.remove());
+    // populate tiles
+    const cells = elGrid.children;
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        const val = grid[r][c];
+        if(val){
+          const tile = document.createElement('div');
+          tile.className='tile';
+          tile.textContent = val;
+          tile.style.background = colorForPrime(val);
+          const idx = r*SIZE + c;
+          cells[idx].appendChild(tile);
+        }
+      }
+    }
+    // score + best + level
+    elScore.textContent = score;
+    elBest.textContent = best;
+    elLevel.textContent = level;
+    elGoal.textContent = goal;
+  }
+
+  function spawnNew(initial=false){
+    const empties = [];
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!grid[r][c]) empties.push([r,c]);
+    if(!empties.length) return false;
+    const [r,c] = empties[Math.floor(Math.random()*empties.length)];
+    const v = initial ? (Math.random()<0.5?2:3) : randomChoiceWeighted(SPAWN);
+    grid[r][c] = v;
+    // mark as new for animation
+    const idx = r*SIZE + c;
+    const cell = elGrid.children[idx];
+    const tile = document.createElement('div'); tile.className='tile new'; tile.textContent=v; tile.style.background=colorForPrime(v);
+    cell.appendChild(tile);
+    setTimeout(()=>tile.classList.remove('new'), 200);
+    return true;
+  }
+
+  function newGame(resetLevel=false){
+    grid = createEmpty(); score = 0; history = [];
+    if(resetLevel){ level = 1; goal = LEVEL_GOALS[0]; elStatus.textContent=''; }
+    spawnNew(true); spawnNew(true);
+    draw();
+  }
+
+  function anyMovesLeft(){
+    // empty cell exists
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!grid[r][c]) return true;
+    // equal neighbors
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+      const v=grid[r][c];
+      if(r+1<SIZE && grid[r+1][c]===v) return true;
+      if(c+1<SIZE && grid[r][c+1]===v) return true;
+    }
+    return false;
+  }
+
+  function reachedGoal(){
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(grid[r][c]===goal) return true;
+    return false;
+  }
+
+  function levelUp(){
+    const at = LEVEL_GOALS.indexOf(goal);
+    if(at>=0 && at < LEVEL_GOALS.length-1){
+      level = at+2; goal = LEVEL_GOALS[at+1];
+      best = Math.max(best, score); persist();
+      elStatus.textContent = 'Level up!';
+      showToast(`Level ${level-1} cleared! ✨ New goal: ${goal}`);
+      // start fresh board for next level
+      grid = createEmpty(); score = 0; history = [];
+      spawnNew(true); spawnNew(true); draw();
+    }else{
+      // completed all goals
+      best = Math.max(best, score); persist();
+      elStatus.textContent = 'You beat all levels! 🏆';
+      showToast('All levels complete! Endless mode unlocked');
+      // switch to endless: keep current goal = last, but allow continuing
+    }
+  }
+
+  function move(dir){
+    // dir: 'left','right','up','down'
+    saveHistory();
+    let moved = false; let gained = 0;
+
+    const range = n => Array.from({length:n}, (_,i)=>i);
+
+    const travel = (line)=>{
+      // compact non-zeros
+      const vals = line.filter(v=>v!==0);
+      // merge equal neighbors into next prime
+      const out = [];
+      for(let i=0;i<vals.length;){
+        if(i+1<vals.length && vals[i]===vals[i+1]){
+          const merged = nextPrime(vals[i]);
+          out.push(merged); gained += merged; i+=2;
+        }else{ out.push(vals[i]); i+=1; }
+      }
+      // pad with zeros
+      while(out.length<SIZE) out.push(0);
+      return out;
+    };
+
+    if(dir==='left' || dir==='right'){
+      for(const r of range(SIZE)){
+        const row = grid[r].slice();
+        const rev = dir==='right';
+        const line = rev ? row.slice().reverse() : row;
+        const next = travel(line);
+        const final = rev ? next.slice().reverse() : next;
+        for(let c=0;c<SIZE;c++) if(grid[r][c]!==final[c]){ grid[r][c]=final[c]; moved=true; }
+      }
+    }else{
+      for(const c of range(SIZE)){
+        const col = range(SIZE).map(r=>grid[r][c]);
+        const rev = dir==='down';
+        const line = rev ? col.slice().reverse() : col;
+        const next = travel(line);
+        const final = rev ? next.slice().reverse() : next;
+        for(let r=0;r<SIZE;r++) if(grid[r][c]!==final[r]){ grid[r][c]=final[r]; moved=true; }
+      }
+    }
+
+    if(moved){
+      score += gained; if(score>best){ best=score; persist(); }
+      draw();
+      spawnNew();
+      draw();
+      if(reachedGoal()) levelUp();
+      else if(!anyMovesLeft()) { showToast('No moves left 😭'); elStatus.textContent='Game over'; }
+    }else{
+      // undo pop because nothing changed
+      history.pop();
+    }
+  }
+
+  // ---------- Input ----------
+  window.addEventListener('keydown', (e)=>{
+    const key = e.key;
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','w','s','A','D','W','S'].includes(key)) e.preventDefault();
+    if(key==='ArrowLeft' || key==='a' || key==='A') move('left');
+    if(key==='ArrowRight'|| key==='d' || key==='D') move('right');
+    if(key==='ArrowUp'   || key==='w' || key==='W') move('up');
+    if(key==='ArrowDown' || key==='s' || key==='S') move('down');
+  });
+
+  // touch/swipe
+  let touchStart=null;
+  elGrid.addEventListener('touchstart', e=>{ if(e.touches.length===1){ touchStart={x:e.touches[0].clientX, y:e.touches[0].clientY}; } }, {passive:true});
+  elGrid.addEventListener('touchend', e=>{
+    if(!touchStart) return; const dx = (e.changedTouches[0].clientX - touchStart.x); const dy = (e.changedTouches[0].clientY - touchStart.y);
+    const ax=Math.abs(dx), ay=Math.abs(dy);
+    if(Math.max(ax,ay) < 24){ touchStart=null; return; }
+    if(ax>ay) move(dx>0?'right':'left'); else move(dy>0?'down':'up');
+    touchStart=null;
+  });
+
+  function showToast(msg){ elToast.textContent = msg; elToast.classList.add('show'); setTimeout(()=>elToast.classList.remove('show'), 1100); }
+
+  // ---------- Init ----------
+  function restore(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+      if(saved && Array.isArray(saved.grid)){
+        grid = saved.grid; score = saved.score||0; best = Number(localStorage.getItem('pm_best')||best); level = saved.level||level;
+        goal = LEVEL_GOALS[Math.min(level-1, LEVEL_GOALS.length-1)]||LEVEL_GOALS[LEVEL_GOALS.length-1];
+        draw(); return true;
+      }
+    }catch(_){/* ignore */}
+    return false;
+  }
+
+  function save(){
+    const payload = {grid, score, level};
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }
+
+  window.addEventListener('beforeunload', save);
+  setInterval(save, 2500);
+
+  if(!restore()) newGame(false); else draw();
+})();
+</script>
+</body>
+</html>
