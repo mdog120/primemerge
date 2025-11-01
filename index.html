@@ -16,12 +16,12 @@
     --text:#374151;
     --muted:#6b7280;
     --gap:10px;
-    --board-max:560px; /* keeps board on screen without scrolling */
+    --board-max:560px;
+    --cell-size:100px; /* computed via ResizeObserver */
   }
   *{box-sizing:border-box}
-  /* removed fixed height to allow scrolling */
   body{margin:0; padding:18px 14px; background: radial-gradient(1200px 800px at 20% -10%, #fff 0%, #f7f4ff 50%, #efeaff 100%), var(--bg); color:var(--text); font-family:'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";}
-  .wrap{width:min(96vw, 760px); margin:0 auto;}  
+  .wrap{width:min(96vw, 760px); margin:0 auto;}
   header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px}
   .title{display:flex; gap:12px; align-items:center}
   .logo{width:56px; height:56px; border-radius:14px; background: linear-gradient(145deg,#a78bfa,#7c3aed); display:grid; place-items:center; color:white; font-weight:900; font-size:22px; box-shadow:0 8px 20px rgba(124,58,237,.35)}
@@ -39,19 +39,16 @@
   .board-wrap{background:var(--panel); padding:16px; border-radius:20px; box-shadow:0 10px 28px rgba(31,41,55,.12)}
   .meta{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
   .meta .left{display:flex; gap:12px; align-items:center}
-  .level{font-weight:800}
   .goal{font-weight:800; color:#6d28d9}
 
-  /* Board is a fixed square that scales down responsively */
-  .board{position:relative; width:min(92vw, var(--board-max)); aspect-ratio:1/1;}
+  .board{position:relative; width:min(92vw, var(--board-max)); height:min(92vw, var(--board-max));}
   .grid{position:absolute; inset:0; background:var(--grid); border-radius:16px; padding:var(--gap); display:grid; grid-template-columns:repeat(4,1fr); grid-gap:var(--gap)}
   .cell{width:100%; height:100%; border-radius:14px; background:#e9e6ff40}
-  /* a separate absolute layer for animated tiles */
   .tiles{position:absolute; inset:var(--gap); display:block}
 
-  .tile{position:absolute; width:calc((100% - (var(--gap)*3))/4); height:calc((100% - (var(--gap)*3))/4); border-radius:14px; display:grid; place-items:center; font-weight:900; color:#2c2c35; font-family:'Nunito', sans-serif; font-size:24px; box-shadow: inset 0 0 1px rgba(0,0,0,.04), 0 10px 16px rgba(31,41,55,.10); transform:translate(var(--x), var(--y)) scale(1); transition: transform .14s ease, background .15s ease}
+  .tile{position:absolute; width:var(--cell-size); height:var(--cell-size); border-radius:14px; display:grid; place-items:center; font-weight:900; color:#2c2c35; font-family:'Nunito', sans-serif; font-size:24px; box-shadow: inset 0 0 1px rgba(0,0,0,.04), 0 10px 16px rgba(31,41,55,.10); transform:translate3d(var(--x), var(--y), 0) scale(1); transition: transform .16s ease, background .15s ease}
   .tile.pop{animation:pop .18s ease}
-  @keyframes pop{0%{transform:translate(var(--x), var(--y)) scale(.6); opacity:.8}100%{transform:translate(var(--x), var(--y)) scale(1); opacity:1}}
+  @keyframes pop{0%{transform:translate3d(var(--x), var(--y), 0) scale(.6); opacity:.8}100%{transform:translate3d(var(--x), var(--y), 0) scale(1); opacity:1}}
 
   .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:22px; background:#111827; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,.3); font-weight:700; display:none}
   .toast.show{display:inline-block}
@@ -59,7 +56,6 @@
   .help{margin-top:10px; font-size:12px; color:var(--muted); text-align:center}
   .emoji-corner{position:fixed; right:16px; top:16px; opacity:.5; font-size:22px}
 
-  /* Modal */
   .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(17,24,39,.45); z-index:50}
   .modal.show{display:flex}
   .card{background:#fff; border-radius:16px; width:min(92vw, 520px); padding:16px 16px 14px; box-shadow:0 20px 50px rgba(0,0,0,.25); position:relative}
@@ -67,7 +63,10 @@
   .card p{margin:6px 0; color:#4b5563}
   .close-x{position:absolute; right:10px; top:10px; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:#eef2ff; cursor:pointer; font-weight:900}
 
-  @media (max-width:480px){ .pill{min-width:82px} .tile{font-size:20px} header{flex-direction:column; align-items:flex-start; gap:10px} .stats{align-self:stretch} } .tile{font-size:20px} }
+  .error-overlay{position:fixed; inset:auto 12px 12px 12px; background:#fee2e2; color:#991b1b; border:1px solid #fecaca; padding:10px; border-radius:12px; font-size:12px; display:none; z-index:60}
+  .error-overlay.show{display:block}
+
+  @media (max-width:480px){ .pill{min-width:82px} .tile{font-size:20px} header{flex-direction:column; align-items:flex-start; gap:10px} .stats{align-self:stretch} }
 </style>
 </head>
 <body>
@@ -109,6 +108,7 @@
   <div class="help">Use <b>arrow keys / swipe</b>. Merge same primes → next prime. Reach the <b>goal prime</b> to level up!</div>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="err" class="error-overlay"></div>
 
 <!-- Modal Instructions -->
 <div id="modal" class="modal" role="dialog" aria-modal="true">
@@ -125,8 +125,225 @@
 </div>
 
 <script>
-// Show a tiny fallback message if JS fails early
 window.__pm_boot = false;
+</script>
+<script>
+(function(){
+  const errBox = document.getElementById('err');
+  function showErr(e){ if(!errBox) return; errBox.textContent = 'Error: ' + e; errBox.classList.add('show'); }
+  try{
+  // ---------- Prime utilities ----------
+  const MAX_SIEVE = 200000;
+  const sieve = new Uint8Array(MAX_SIEVE+1);
+  const primes = [];
+  (function buildPrimes(){
+    sieve.fill(1); sieve[0]=0; sieve[1]=0;
+    for(let i=2;i*i<=MAX_SIEVE;i++) if(sieve[i]) for(let j=i*i;j<=MAX_SIEVE;j+=i) sieve[j]=0;
+    for(let i=2;i<=MAX_SIEVE;i++) if(sieve[i]) primes.push(i);
+  })();
+  const primeIndex = new Map(primes.map((p,i)=>[p,i]));
+  const nextPrime = p => primes[(primeIndex.get(p)||0)+1]||p;
+
+  // ---------- Game constants ----------
+  const SIZE = 4;
+  const LEVEL_GOALS = [997, 7919, 104729];
+  const SPAWN = [ {v:2,w:0.72}, {v:3,w:0.2}, {v:5,w:0.08} ];
+  const STORAGE_KEY = 'prime-merge-v4';
+
+  // ---------- State ----------
+  let grid = createEmpty();
+  let score = 0; let best = Number(localStorage.getItem('pm_best')||0);
+  let level = Number(localStorage.getItem('pm_level')||1);
+  let goal = LEVEL_GOALS[Math.min(level-1, LEVEL_GOALS.length-1)];
+  let history = [];
+
+  // ---------- DOM ----------
+  const elGrid = document.getElementById('grid');
+  const elTiles = document.getElementById('tiles');
+  const elScore = document.getElementById('score');
+  const elBest = document.getElementById('best');
+  const elLevel = document.getElementById('level');
+  const elGoal = document.getElementById('goal');
+  const elStatus = document.getElementById('status');
+  const elToast = document.getElementById('toast');
+  const elModal = document.getElementById('modal');
+  const elClose = document.getElementById('closeModal');
+  const elGotIt = document.getElementById('gotIt');
+
+  window.__pm_boot = true;
+
+  document.getElementById('newBtn').addEventListener('click', ()=> newGame(true));
+  document.getElementById('undoBtn').addEventListener('click', undoMove);
+  if(elClose) elClose.addEventListener('click', hideModal);
+  if(elGotIt) elGotIt.addEventListener('click', hideModal);
+
+  // Build static background cells
+  function renderBase(){
+    elGrid.innerHTML='';
+    for(let i=0;i<SIZE*SIZE;i++){
+      const cell=document.createElement('div');
+      cell.className='cell';
+      cell.setAttribute('role','gridcell');
+      elGrid.appendChild(cell);
+    }
+  }
+  renderBase();
+
+  // ---------- Layout/measure via ResizeObserver ----------
+  let cellSize=0, gap=10;
+  const ro = new ResizeObserver(()=>{ computeSizes(); drawInstant(); });
+  ro.observe(elTiles);
+  function computeSizes(){
+    const style = getComputedStyle(document.documentElement);
+    gap = parseFloat(style.getPropertyValue('--gap'))||10;
+    const w = elTiles.clientWidth; // safe width
+    if(w>0){ cellSize = (w - gap*3)/4; document.documentElement.style.setProperty('--cell-size', cellSize+'px'); }
+  }
+
+  function pos(r,c){ return {x: c*(cellSize+gap), y: r*(cellSize+gap)}; }
+
+  function colorForPrime(p){
+    const idx = primeIndex.get(p) ?? 0;
+    const hue = (idx*22)%360; const sat = 62; const light = 88 - Math.min(idx*1.5, 26);
+    return `hsl(${hue} ${sat}% ${light}%)`;
+  }
+
+  function drawInstant(){
+    if(cellSize===0) { computeSizes(); if(cellSize===0) return; }
+    elTiles.innerHTML='';
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        const v=grid[r][c]; if(!v) continue;
+        const t=document.createElement('div'); t.className='tile'; t.textContent=v; t.style.background=colorForPrime(v);
+        const p=pos(r,c); t.style.setProperty('--x', p.x+'px'); t.style.setProperty('--y', p.y+'px'); elTiles.appendChild(t);
+      }
+    }
+    elScore.textContent = score; elBest.textContent = best; elLevel.textContent = level; elGoal.textContent = goal;
+  }
+
+  function spawnNew(initial=false){
+    const empties=[]; for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!grid[r][c]) empties.push([r,c]);
+    if(!empties.length) return false;
+    const [r,c] = empties[Math.floor(Math.random()*empties.length)];
+    const v = initial ? (Math.random()<0.5?2:3) : randomChoiceWeighted(SPAWN);
+    grid[r][c]=v;
+    if(cellSize===0) computeSizes();
+    const t=document.createElement('div'); t.className='tile pop'; t.textContent=v; t.style.background=colorForPrime(v);
+    const p=pos(r,c); t.style.setProperty('--x', p.x+'px'); t.style.setProperty('--y', p.y+'px'); elTiles.appendChild(t);
+    setTimeout(()=>t.classList.remove('pop'), 200);
+    return true;
+  }
+
+  function createEmpty(){ return Array.from({length:SIZE},()=>Array(SIZE).fill(0)); }
+  function randomChoiceWeighted(arr){ const r=Math.random(); let acc=0; for(const {v,w} of arr){ acc+=w; if(r<=acc) return v;} return arr[arr.length-1].v; }
+  function cloneGrid(g){ return g.map(r=>r.slice()); }
+  function saveHistory(){ history.push({grid:cloneGrid(grid), score}); if(history.length>60) history.shift(); }
+  function undoMove(){ if(!history.length) return; const s=history.pop(); grid=s.grid; score=s.score; drawInstant(); showToast('Undo'); }
+  function persist(){ localStorage.setItem('pm_best', best); localStorage.setItem('pm_level', level); }
+
+  function travelLine(line){
+    const vals=line.filter(v=>v!==0);
+    const out=[]; const moves=[]; let i=0; let write=0;
+    while(i<vals.length){
+      if(i+1<vals.length && vals[i]===vals[i+1]){ const merged = nextPrime(vals[i]); out[write]=merged; moves.push({from:i,to:write,merge:true,value:vals[i],newValue:merged}); i+=2; write++; }
+      else { out[write]=vals[i]; moves.push({from:i,to:write,merge:false,value:vals[i]}); i++; write++; }
+    }
+    while(out.length<SIZE) out.push(0);
+    return {result:out, moves};
+  }
+
+  function move(dir){
+    saveHistory(); let moved=false; let gained=0; const animations=[]; const range=n=>Array.from({length:n},(_,i)=>i);
+
+    if(dir==='left' || dir==='right'){
+      for(const r of range(SIZE)){
+        const row = grid[r].slice(); const rev = dir==='right';
+        const {result,moves} = travelLine(rev?row.slice().reverse():row);
+        const final = rev?result.slice().reverse():result;
+        const indices=[]; for(let c=0;c<SIZE;c++) if(row[c]) indices.push(c);
+        moves.forEach((m)=>{ const fromC=indices[m.from]; const toC = rev? (SIZE-1 - m.to) : m.to; animations.push({from:{r,c:fromC}, to:{r,c:toC}, merge:m.merge, value:m.value, newValue:m.newValue}); if(m.merge) gained+=m.newValue; });
+        for(let c=0;c<SIZE;c++) if(grid[r][c]!==final[c]){ grid[r][c]=final[c]; moved=true; }
+      }
+    } else {
+      for(const c of range(SIZE)){
+        const col = range(SIZE).map(r=>grid[r][c]); const rev = dir==='down';
+        const {result,moves} = travelLine(rev?col.slice().reverse():col);
+        const final = rev?result.slice().reverse():result;
+        const indices=[]; for(let r=0;r<SIZE;r++) if(col[r]) indices.push(r);
+        moves.forEach((m)=>{ const fromR=indices[m.from]; const toR = rev? (SIZE-1 - m.to) : m.to; animations.push({from:{r:fromR,c}, to:{r:toR,c}, merge:m.merge, value:m.value, newValue:m.newValue}); if(m.merge) gained+=m.newValue; });
+        for(let r=0;r<SIZE;r++) if(grid[r][c]!==final[r]){ grid[r][c]=final[r]; moved=true; }
+      }
+    }
+
+    if(!moved){ history.pop(); return; }
+
+    if(cellSize===0) computeSizes();
+    const clones=[];
+    animations.forEach(step=>{
+      const t=document.createElement('div'); t.className='tile'; t.textContent=step.value; t.style.background=colorForPrime(step.value);
+      const p0=pos(step.from.r, step.from.c); const p1=pos(step.to.r, step.to.c);
+      t.style.setProperty('--x', p0.x+'px'); t.style.setProperty('--y', p0.y+'px'); elTiles.appendChild(t); clones.push({el:t});
+      void t.offsetWidth; t.style.transition='transform .16s ease'; t.style.setProperty('--x', p1.x+'px'); t.style.setProperty('--y', p1.y+'px');
+    });
+
+    const onDone=()=>{
+      clones.forEach(({el})=>el.remove());
+      score+=gained; if(score>best){ best=score; persist(); }
+      drawInstant(); spawnNew(); drawInstant(); if(reachedGoal()) levelUp(); else if(!anyMovesLeft()){ showToast('No moves left 😭'); elStatus.textContent='Game over'; }
+    };
+
+    let left=clones.length; if(left===0){ onDone(); return; }
+    clones.forEach(({el})=> el.addEventListener('transitionend', ()=>{ if(--left===0) onDone(); }, {once:true}) );
+  }
+
+  // ---------- Input ----------
+  window.addEventListener('keydown', (e)=>{
+    const k=e.key; if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','w','s','A','D','W','S'].includes(k)) e.preventDefault();
+    if(k==='ArrowLeft'||k==='a'||k==='A') move('left');
+    if(k==='ArrowRight'||k==='d'||k==='D') move('right');
+    if(k==='ArrowUp'||k==='w'||k==='W') move('up');
+    if(k==='ArrowDown'||k==='s'||k==='S') move('down');
+  });
+  let touchStart=null; const board=document.getElementById('board');
+  board.addEventListener('touchstart', e=>{ if(e.touches.length===1){ touchStart={x:e.touches[0].clientX, y:e.touches[0].clientY}; } }, {passive:true});
+  board.addEventListener('touchend', e=>{ if(!touchStart) return; const dx=e.changedTouches[0].clientX-touchStart.x; const dy=e.changedTouches[0].clientY-touchStart.y; const ax=Math.abs(dx), ay=Math.abs(dy); if(Math.max(ax,ay)<24){ touchStart=null; return;} if(ax>ay) move(dx>0?'right':'left'); else move(dy>0?'down':'up'); touchStart=null; });
+
+  function showToast(msg){ elToast.textContent=msg; elToast.classList.add('show'); setTimeout(()=>elToast.classList.remove('show'), 1100); }
+
+  function hideModal(){ elModal.classList.remove('show'); localStorage.setItem('pm_seen','1'); }
+  function maybeShowModal(){ if(!localStorage.getItem('pm_seen')) elModal.classList.add('show'); }
+
+  function reachedGoal(){ for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(grid[r][c]===goal) return true; return false; }
+  function anyMovesLeft(){ for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!grid[r][c]) return true; for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){ const v=grid[r][c]; if(r+1<SIZE && grid[r+1][c]===v) return true; if(c+1<SIZE && grid[r][c+1]===v) return true;} return false; }
+
+  function levelUp(){
+    const at = LEVEL_GOALS.indexOf(goal);
+    if(at>=0 && at < LEVEL_GOALS.length-1){
+      level = at+2; goal = LEVEL_GOALS[at+1]; best=Math.max(best,score); persist();
+      showToast(`Level ${level-1} cleared! ✨ New goal: ${goal}`);
+      grid=createEmpty(); score=0; history=[]; spawnNew(true); spawnNew(true); drawInstant();
+    } else {
+      best=Math.max(best,score); persist(); showToast('All levels complete! Endless unlocked');
+    }
+  }
+
+  function newGame(resetLevel=false){
+    grid=createEmpty(); score=0; history=[]; elStatus.textContent='';
+    if(resetLevel){ level=1; goal=LEVEL_GOALS[0]; localStorage.removeItem('pm_seen'); }
+    spawnNew(true); spawnNew(true); drawInstant(); maybeShowModal();
+  }
+
+  function restore(){
+    try{ const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'); if(saved && Array.isArray(saved.grid)){ grid=saved.grid; score=saved.score||0; best=Number(localStorage.getItem('pm_best')||best); level=saved.level||level; goal=LEVEL_GOALS[Math.min(level-1, LEVEL_GOALS.length-1)]||LEVEL_GOALS.at(-1); drawInstant(); return true; } }catch(e){ showErr(e.message); }
+    return false;
+  }
+  function save(){ const payload={grid,score,level}; localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); }
+  window.addEventListener('beforeunload', save); setInterval(save, 2500);
+
+  if(!restore()) newGame(false); else drawInstant(); maybeShowModal();
+
+  }catch(err){ console.error(err); showErr(err.message); }
+})();
 </script>
 <script>
 (function(){
